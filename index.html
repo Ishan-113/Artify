@@ -144,8 +144,12 @@ overflow:hidden;z-index:4}
 .grid-art{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
 @media (max-width:900px){.grid-art{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.grid-art{grid-template-columns:1fr}}
-.art{border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);display:flex;flex-direction:column}
-.art img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.art{border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);display:flex;flex-direction:column;transition:transform .18s ease, border-color .18s ease, background .18s ease}
+.art:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.08)}
+.art img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;transition:opacity .35s ease, transform .4s ease}
+.art:hover img{transform:scale(1.015)}
+.art img[loading]{opacity:0}
+.art img.loaded{opacity:1}
 .art-body{padding:14px 14px 16px}
 .art-title{font-weight:600;font-size:15px;color:#fff}
 .art-by{font-size:13px;color:rgba(255,255,255,.62);margin-top:4px}
@@ -186,12 +190,15 @@ overflow:hidden;z-index:4}
 .field{display:grid;gap:6px}
 .field label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.72);font-weight:600}
 .field input,.field textarea{width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;padding:12px 14px;font-family:var(--font-body);font-size:14px;outline:none;transition:border-color .2s, background .2s}
-.field input:focus,.field textarea:focus{border-color:rgba(255,255,255,.34);background:rgba(255,255,255,.12)}
+.field input:focus,.field textarea:focus,.field select:focus,.search input:focus{border-color:rgba(255,255,255,.34);background:rgba(255,255,255,.12);outline:2px solid rgba(255,255,255,.18);outline-offset:2px}
 .field textarea{min-height:120px;resize:vertical}
-.submit{height:44px;border-radius:10px;border:1px solid #fff;background:#fff;color:#111;font-weight:700;font-size:14px;cursor:pointer;transition:filter .2s}
+.submit{height:44px;border-radius:10px;border:1px solid #fff;background:#fff;color:#111;font-weight:700;font-size:14px;cursor:pointer;transition:filter .2s, opacity .2s}
 .submit:hover{filter:brightness(.96)}
+.submit:disabled{opacity:.6;cursor:not-allowed;filter:none}
+.submit:focus-visible,.btn-glass:focus-visible,.btn-white:focus-visible,.filter:focus-visible,.close:focus-visible,.cta:focus-visible{outline:2px solid rgba(255,255,255,.9);outline-offset:2px}
 .form-msg{font-size:13px;color:#a8f0c6;display:none}
 .form-msg.show{display:block}
+.form-msg.error{color:#ff9a9a}
 
 /* Mobile handling */
 @media (max-width: 780px), (max-aspect-ratio: 5/4){
@@ -362,7 +369,7 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
 
     <article class="demo-card" aria-label="Featured artwork">
       <div class="demo-visual">
-        <img src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=600&auto=format&fit=crop&q=60" alt="Abstract red and blue smoke – featured artwork">
+        <img src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=600&auto=format&fit=crop&q=60" alt="Neon Horizon — featured digital artwork" loading="eager" onerror="this.style.display='none'">
         <button class="play" aria-label="View featured artwork" data-open="explore">
           <svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M8 5.14v14l11-7z"/></svg>
         </button>
@@ -415,10 +422,10 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
           <div class="col c4">
             <h3>Why Artify</h3>
             <ul>
-              <li><a href="#" data-open="portfolio">Showcase your artwork</a></li>
-              <li><a href="#" data-open="portfolio">Build your portfolio</a></li>
-              <li><a href="#" data-open="explore">Discover new artists</a></li>
-              <li><a href="#" data-open="about">Creative community</a></li>
+              <li><a href="#" data-open="portfolio">Publish artwork</a></li>
+              <li><a href="#" data-open="portfolio">Your shareable profile</a></li>
+              <li><a href="#" data-open="explore">Discover artists</a></li>
+              <li><a href="#" data-open="about">Community</a></li>
             </ul>
           </div>
         </div>
@@ -434,7 +441,7 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
   <div class="panel">
     <button class="close" aria-label="Close" data-close>✕</button>
     <h2>Explore Artwork</h2>
-    <p class="sub">Browse the Artify gallery. Search by keyword or filter by category — Digital Art, Illustration, Photography, 3D Art and Concept Art. <span style="display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;background:rgba(255,198,88,.14);border:1px solid rgba(255,198,88,.28);color:#ffd27a;font-size:12px;letter-spacing:.04em">Demo data — artworks use Unsplash placeholder images for preview. Replace with real uploads in production.</span></p>
+    <p class="sub">Browse the Artify gallery. Search by keyword or filter by category — Digital Art, Illustration, Photography, 3D Art and Concept Art.</p>
     <div class="search"><input id="searchInput" placeholder="Search artwork, artist or tag…"><button id="searchBtn">Search</button></div>
     <div class="filters" id="filters">
       <button class="filter active" data-cat="All">All</button>
@@ -444,7 +451,7 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
       <button class="filter" data-cat="3D Art">3D Art</button>
       <button class="filter" data-cat="Concept Art">Concept Art</button>
     </div>
-    <div class="grid-art" id="artGrid"></div>
+    <div class="grid-art" id="artGrid"><p style="color:rgba(255,255,255,.55);grid-column:1/-1;font-size:13px">Loading artworks…</p></div>
   </div>
 </div>
 
@@ -453,13 +460,13 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
   <div class="panel">
     <button class="close" aria-label="Close" data-close>✕</button>
     <h2>Featured Artists</h2>
-    <p class="sub">Meet talented creators and explore their portfolios. Build your own and connect with the creative community. <span style="display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;background:rgba(255,198,88,.14);border:1px solid rgba(255,198,88,.28);color:#ffd27a;font-size:12px;letter-spacing:.04em">Demo data — fictional sample artists & profile photos (Unsplash) for UI preview only.</span></p>
-    <div class="artist-grid" id="artistGrid"></div>
+    <p class="sub">Meet talented creators and explore their portfolios. Build your own and connect with the creative community.</p>
+    <div class="artist-grid" id="artistGrid"><p style="color:rgba(255,255,255,.55);grid-column:1/-1;font-size:13px">Loading artists…</p></div>
     <div class="why" style="margin-top:22px">
-      <div style="cursor:pointer" data-open="portfolio"><h4>Showcase your work</h4><p>Publish high-resolution artwork with story, tools and tags.</p><span style="margin-top:8px;display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#bfeaff">Create →</span></div>
-      <div style="cursor:pointer;border-color:rgba(108,211,255,.28);background:rgba(108,211,255,.08)" data-open="portfolio"><h4>Build your portfolio</h4><p>A clean, shareable profile that grows with every creation.</p><span style="margin-top:8px;display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#bfeaff">Open personal portfolio →</span></div>
-      <div style="cursor:pointer" data-open="explore"><h4>Discover new artists</h4><p>Follow creators, save collections and get inspired daily.</p><span style="margin-top:8px;display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.62)">Explore →</span></div>
-      <div><h4>Creative community</h4><p>Feedback, collaborations and features for emerging voices.</p></div>
+      <div style="cursor:pointer" data-open="portfolio"><h4>Publish your work</h4><p>High-resolution images, story, tools and tags — presented as a gallery.</p><span style="margin-top:8px;display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#bfeaff">Create →</span></div>
+      <div style="cursor:pointer;border-color:rgba(108,211,255,.28);background:rgba(108,211,255,.08)" data-open="portfolio"><h4>Your link to share</h4><p>One clean profile for your entire practice. Updates instantly.</p><span style="margin-top:8px;display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#bfeaff">Open portfolio →</span></div>
+      <div style="cursor:pointer" data-open="explore"><h4>Find inspiration</h4><p>Follow artists, save collections and discover new work daily.</p><span style="margin-top:8px;display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.62)">Explore →</span></div>
+      <div><h4>Community</h4><p>Feedback, features and collaborations for emerging voices.</p></div>
     </div>
   </div>
 </div>
@@ -489,11 +496,11 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
   <div class="panel">
     <button class="close" aria-label="Close" data-close>✕</button>
     <h2>Create Your Portfolio</h2>
-    <p class="sub">This is <strong style="color:#fff">your personal portfolio</strong> — not the Explore gallery. <span style="display:inline-block;margin-top:8px;padding:5px 10px;border-radius:999px;background:rgba(57,255,120,.14);border:1px solid rgba(57,255,120,.28);color:#a8f0c6;font-size:12px;letter-spacing:.04em">✅ Backend LIVE — saved to SQLite (<code style="background:rgba(255,255,255,.12);padding:1px 6px;border-radius:4px">/api/portfolio</code>) and visible to ALL users.</span></p>
+    <p class="sub">Create your personal portfolio — a clean, shareable profile that grows with every artwork you publish.</p>
     <div class="contact-grid">
       <div class="contact-info">
         <h4>How it works</h4>
-        <p><strong>1.</strong> Enter your display name, category &amp; bio.<br><strong>2.</strong> Add your first artwork (image URL or use placeholder).<br><strong>3.</strong> Hit <em style="color:#fff">Create Portfolio</em> — preview appears instantly below.</p>
+        <p><strong>1.</strong> Tell us about yourself — name, focus and short bio.<br><strong>2.</strong> Add your first artwork with a title and image.<br><strong>3.</strong> Publish — your profile appears in Explore and is shareable via your link.</p>
         <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)">
           <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.86);font-weight:700">Your Portfolio Preview</div>
           <div id="portfolioPreview" style="margin-top:12px;color:rgba(255,255,255,.62);font-size:13px;line-height:1.6">No portfolio yet — create one on the right. It will stay on this device until cleared.</div>
@@ -502,18 +509,18 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
           <button id="portfolioViewBtn" style="display:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid #fff;background:#fff;color:#111;font-weight:600;font-size:13px;cursor:pointer">View My Portfolio</button>
           <button id="portfolioClearBtn" style="display:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;font-weight:500;font-size:13px;cursor:pointer">Clear</button>
         </div>
-        <p style="margin-top:12px;font-size:11px;color:#a8f0c6;line-height:1.6"><strong>✅ Shared:</strong> With backend LIVE, this portfolio is stored in <code style="background:rgba(255,255,255,.10);padding:1px 5px;border-radius:4px">data/artify.db (SQLite)</code> and searchable by any visitor via <code style="background:rgba(255,255,255,.10);padding:1px 5px;border-radius:4px">Explore → search</code> or <code style="background:rgba(255,255,255,.10);padding:1px 5px;border-radius:4px">/api/portfolios?q=your-handle</code>. Empty image = black placeholder (fixed).</p>
+        <p style="margin-top:12px;font-size:11px;color:rgba(255,255,255,.55);line-height:1.6">Your portfolio will appear in Explore once published. Add a high-resolution image URL for best presentation.</p>
       </div>
       <form class="form" id="portfolioForm" novalidate>
-        <div class="field"><label for="p-name">Display Name *</label><input id="p-name" name="pname" required placeholder="e.g. Elena Voss" autocomplete="name"></div>
-        <div class="field"><label for="p-handle">Portfolio handle</label><input id="p-handle" name="phandle" placeholder="artify.studio/your-name (auto from name)"></div>
-        <div class="field"><label for="p-category">Primary Category</label><select id="p-category" name="pcat" style="width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;padding:0 14px;font-family:var(--font-body);font-size:14px;outline:none"><option value="Digital Art" style="color:#111">Digital Art</option><option value="Illustration" style="color:#111">Illustration</option><option value="Photography" style="color:#111">Photography</option><option value="3D Art" style="color:#111">3D Art</option><option value="Concept Art" style="color:#111">Concept Art</option></select></div>
-        <div class="field"><label for="p-bio">Bio / Statement</label><textarea id="p-bio" name="pbio" placeholder="Neon palettes &amp; futuristic cityscapes. Featured in..."></textarea></div>
-        <div class="field"><label for="p-art-title">First Artwork Title</label><input id="p-art-title" name="partTitle" placeholder="e.g. Neon Horizon"></div>
-        <div class="field"><label for="p-art-img">Artwork Image URL</label><input id="p-art-img" name="partImg" placeholder="https://... or leave empty for placeholder"><span style="font-size:11px;color:rgba(255,255,255,.5)">Paste any Unsplash/image URL. Leave empty to use a demo placeholder.</span></div>
-        <button type="submit" class="submit">Create Portfolio →</button>
-        <p class="form-msg" id="portfolioMsg">Portfolio created! Preview updated above. ✨</p>
-        <p style="font-size:11px;color:rgba(255,255,255,.42);text-align:center">Demo mode — no data leaves this browser. In production this POSTs to /api/portfolio.</p>
+        <div class="field"><label for="p-name">Display Name <span style="color:#ff9a9a">*</span></label><input id="p-name" name="pname" required aria-required="true" placeholder="e.g. Elena Voss" autocomplete="name"></div>
+        <div class="field"><label for="p-handle">Portfolio link</label><input id="p-handle" name="phandle" placeholder="artify.studio/your-name" aria-describedby="handleHelp" readonly style="opacity:.85"><span id="handleHelp" style="font-size:11px;color:rgba(255,255,255,.5)">Your shareable link — based on your account. You can update your display name anytime.</span></div>
+        <div class="field"><label for="p-category">Focus <span style="color:#ff9a9a">*</span></label><select id="p-category" name="pcat" required aria-required="true" style="width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;padding:0 14px;font-family:var(--font-body);font-size:14px;outline:none"><option value="Digital Art" style="color:#111">Digital Art</option><option value="Illustration" style="color:#111">Illustration</option><option value="Photography" style="color:#111">Photography</option><option value="3D Art" style="color:#111">3D Art</option><option value="Concept Art" style="color:#111">Concept Art</option></select></div>
+        <div class="field"><label for="p-bio">Short bio</label><textarea id="p-bio" name="pbio" placeholder="A short statement about your practice, tools and interests..." rows="3"></textarea></div>
+        <div class="field"><label for="p-art-title">First artwork — title</label><input id="p-art-title" name="partTitle" placeholder="e.g. Neon Horizon"></div>
+        <div class="field"><label for="p-art-img">Artwork image URL</label><input id="p-art-img" name="partImg" type="url" placeholder="https://..." aria-describedby="artHelp"><span id="artHelp" style="font-size:11px;color:rgba(255,255,255,.5)">Direct link to your image (https://). Leave empty to publish text-only.</span></div>
+        <button type="submit" class="submit" id="portfolioSubmit">Publish Portfolio →</button>
+        <p class="form-msg" id="portfolioMsg" role="status" aria-live="polite"></p>
+        <p style="font-size:11px;color:rgba(255,255,255,.42);text-align:center">You can edit this anytime after publishing.</p>
       </form>
     </div>
   </div>
@@ -558,8 +565,8 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     <div class="contact-grid">
       <div class="contact-info">
         <h4>Contact Information</h4>
-        <p><strong>Email:</strong> hello@artify.studio<br><strong>Studio:</strong> 124 Creative Lane, Lisbon — London — Remote<br><strong>Hours:</strong> Mon–Fri, 10am–6pm CET</p>
-        <p style="margin-top:14px">Follow us on Instagram, Behance and Dribbble for daily curation.</p>
+        <p><strong>Email:</strong> hello@artify.studio<br><strong>Platform:</strong> Digital Creative Platform • Online Community<br><strong>Availability:</strong> Available Worldwide — Remote</p>
+        <p style="margin-top:14px">We feature work daily and welcome portfolio submissions from emerging artists.</p>
         <div class="why" style="grid-template-columns:1fr;margin-top:16px">
           <div style="padding:14px"><h4>Why reach out?</h4><p>Portfolio reviews, featured artwork nominations, and community collaborations.</p></div>
         </div>
@@ -634,14 +641,14 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     document.documentElement.classList.remove('js-enter');
   }
 
-  // Artify data
+  // Artify data — curated sample works for presentation
   const artworks = [
-    {title:"Neon Horizon", artist:"Elena Voss", cat:"Digital Art", img:"https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=600&auto=format&fit=crop&q=60", love:"2.4k"},
-    {title:"Midnight Bloom", artist:"Kenji Arai", cat:"Illustration", img:"https://images.unsplash.com/photo-1515405295579-ba7b45403062?w=600&auto=format&fit=crop&q=60", love:"1.8k"},
-    {title:"Alpine Silence", artist:"Sofia Marin", cat:"Photography", img:"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&auto=format&fit=crop&q=60", love:"3.1k"},
-    {title:"Chrome Dreams", artist:"Milo R.", cat:"3D Art", img:"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60", love:"892"},
-    {title:"Wanderer’s Map", artist:"Ava Chen", cat:"Concept Art", img:"https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=60", love:"1.2k"},
-    {title:"Paper City", artist:"Jonah Lee", cat:"Illustration", img:"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&auto=format&fit=crop&q=60", love:"2.0k"},
+    {title:"Neon Horizon", artist:"Elena Voss", cat:"Digital Art", img:"https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=700&auto=format&fit=crop&q=60", love:"2.4k"},
+    {title:"Midnight Bloom", artist:"Kenji Arai", cat:"Illustration", img:"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=700&auto=format&fit=crop&q=60", love:"1.8k"},
+    {title:"Alpine Silence", artist:"Sofia Marin", cat:"Photography", img:"https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=700&auto=format&fit=crop&q=60", love:"3.1k"},
+    {title:"Chrome Dreams", artist:"Milo R.", cat:"3D Art", img:"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=700&auto=format&fit=crop&q=60", love:"892"},
+    {title:"Wanderer’s Map", artist:"Ava Chen", cat:"Concept Art", img:"https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=700&auto=format&fit=crop&q=60", love:"1.2k"},
+    {title:"Paper City", artist:"Jonah Lee", cat:"Illustration", img:"https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=700&auto=format&fit=crop&q=60", love:"2.0k"},
   ];
   const artists = [
     {name:"Elena Voss", role:"Digital Art • Berlin", bio:"Neon palettes & futuristic cityscapes. Featured in Wired.", img:"https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&auto=format&fit=crop&q=60"},
@@ -662,8 +669,8 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     grid.innerHTML = list.map(a=>{
       const hasImg = (a.img || '').trim();
       const visual = hasImg
-        ? `<img src="${a.img}" alt="${a.title} by ${a.artist}" loading="lazy">`
-        : `<div style="width:100%;aspect-ratio:4/3;display:grid;place-items:center;background:#000;color:rgba(255,255,255,.35);font-size:11px;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06)">No image</div>`;
+        ? `<img src="${a.img}" alt="${a.title} by ${a.artist} — ${a.cat} artwork" loading="lazy" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div style=&quot;width:100%;aspect-ratio:4/3;display:grid;place-items:center;background:#0a0f14;color:rgba(255,255,255,.38);font-size:11px;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06)'>Image unavailable</div>')">`
+        : `<div style="width:100%;aspect-ratio:4/3;display:grid;place-items:center;background:#0a0f14;color:rgba(255,255,255,.35);font-size:11px;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06)">No image</div>`;
       return `
       <div class="art">
         ${visual}
@@ -680,7 +687,7 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     if(!grid) return;
     grid.innerHTML = artists.map(a=>`
       <div class="artist">
-        <img src="${a.img}" alt="${a.name}">
+        <img src="${a.img}" alt="${a.name} — ${a.role}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=60'">
         <h4>${a.name}</h4>
         <p>${a.role}<br>${a.bio}</p>
         <a href="#" data-artist="${a.name}">View Portfolio</a>
@@ -708,26 +715,38 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     if(location.protocol === 'file:') { console.warn('[Artify] file:// cannot fetch /api — open via http://localhost:4000'); return; }
     try{
       const artRes = await fetch('/api/artworks').then(r=> r.ok ? r.json() : null).catch(()=>null);
-      if(Array.isArray(artRes) && artRes.length){
-        artworks.length = 0;
-        artRes.forEach(a=>{
-          artworks.push({ title: a.title, artist: a.artist, cat: a.cat, img: (a.img||'').trim(), love: a.love || '— new' });
-        });
-        renderArt(activeCat, document.getElementById('searchInput')?.value || '');
+      if(Array.isArray(artRes)){
+        if(artRes.length){
+          artworks.length = 0;
+          artRes.forEach(a=>{
+            artworks.push({ title: a.title, artist: a.artist, cat: a.cat, img: (a.img||'').trim(), love: a.love || '— new' });
+          });
+          renderArt(activeCat, document.getElementById('searchInput')?.value || '');
+        } else {
+          document.getElementById('artGrid').innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">No artworks to display yet.</p>';
+        }
       }
-      // also refresh artists grid with portfolios from DB (so new portfolios appear as artists)
       const artistRes = await fetch('/api/artists').then(r=> r.ok ? r.json() : null).catch(()=>null);
-      if(Array.isArray(artistRes) && artistRes.length){
-        // merge: keep seeded 4 but append any portfolio-derived artists that are not already in list
-        const existing = new Set(artists.map(a=>a.name.toLowerCase()));
-        artistRes.forEach(a=>{
-          if(!existing.has((a.name||'').toLowerCase())){
-            artists.push({ name: a.name, role: a.role || (a.cat ? a.cat+' • '+(a.handle||'') : 'Community'), bio: a.bio || '', img: (a.img||'').trim() });
-          }
-        });
-        renderArtists();
+      if(Array.isArray(artistRes)){
+        if(artistRes.length){
+          const existing = new Set(artists.map(a=>a.name.toLowerCase()));
+          artistRes.forEach(a=>{
+            if(!existing.has((a.name||'').toLowerCase())){
+              artists.push({ name: a.name, role: a.role || (a.cat ? a.cat+' • '+(a.handle||'') : 'Community'), bio: a.bio || '', img: (a.img||'').trim() });
+            }
+          });
+          renderArtists();
+        } else {
+          document.getElementById('artistGrid').innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">No artists to display yet.</p>';
+        }
       }
-    }catch(e){ console.warn('[syncFromBackend] failed', e); }
+    }catch(e){
+      console.warn('[syncFromBackend] failed', e);
+      const ag = document.getElementById('artGrid');
+      if(ag && !ag.querySelector('.art')) ag.innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">We couldn’t load this content right now. Please try again.</p>';
+      const arg = document.getElementById('artistGrid');
+      if(arg && !arg.querySelector('.artist')) arg.innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">We couldn’t load this content right now. Please try again.</p>';
+    }
   }
   syncFromBackend();
   // re-sync when portfolio is created (also after hash navigation)
@@ -936,19 +955,20 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     try{
       const data = await PortfolioStore.load();
       if(!data){
-        const hint = PORTFOLIO_CONFIG.USE_BACKEND
-          ? 'No portfolio yet — create one on the right. Will be saved via API.'
-          : 'No portfolio yet — create one on the right. Saved locally in this browser (localStorage). Backend disabled.';
-        pPreview.innerHTML = hint;
+        if(!Auth.isLogged()){
+          pPreview.innerHTML = '<div style="color:rgba(255,255,255,.68);line-height:1.5"><strong style="color:#fff">Please login to create your portfolio.</strong><br>Your profile is linked to your account and will appear in Explore once published.</div><div style="margin-top:12px"><a href="#" data-open="auth" style="display:inline-flex;padding:8px 14px;border-radius:999px;background:#fff;color:#111;text-decoration:none;font-weight:700;font-size:13px">Login or create account →</a></div>';
+          // re-bind open handler for injected link
+          pPreview.querySelectorAll('[data-open]').forEach(a=> a.addEventListener('click', e=>{ e.preventDefault(); open(a.dataset.open); }));
+        } else {
+          pPreview.innerHTML = 'No portfolio yet — create one on the right.';
+        }
         if(pViewBtn) pViewBtn.style.display='none';
         if(pClearBtn) pClearBtn.style.display='none';
         return;
       }
       const rawImg = (data.artImg || '').trim();
       const handle = data.handle || data.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-      const badge = PORTFOLIO_CONFIG.USE_BACKEND
-        ? '<span style="display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;background:rgba(108,211,255,.14);border:1px solid rgba(108,211,255,.28);color:#bfeaff;font-size:10px">via API</span>'
-        : '<span style="display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;background:rgba(255,198,88,.14);border:1px solid rgba(255,198,88,.28);color:#ffd27a;font-size:10px">localStorage</span>';
+      const badge = '';
       const avatarHtml = rawImg
         ? `<img src="${rawImg}" alt="" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,.14)">`
         : `<div style="width:56px;height:56px;border-radius:10px;background:#000;border:1px solid rgba(255,255,255,.14);display:grid;place-items:center;color:rgba(255,255,255,.35);font-size:9px;letter-spacing:.07em;text-transform:uppercase">No img</div>`;
@@ -986,27 +1006,49 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
   if(pForm){
     pForm.addEventListener('submit', async (e)=>{
       e.preventDefault();
+      if(!Auth.isLogged()){
+        if(pMsg){ pMsg.textContent='Please login to publish your portfolio.'; pMsg.style.color='#ffd27a'; pMsg.classList.add('show'); }
+        open('auth'); return;
+      }
+      const submitBtn = document.getElementById('portfolioSubmit');
       const fd=new FormData(pForm);
       const name=fd.get('pname')?.toString().trim();
-      let handle=fd.get('phandle')?.toString().trim();
       const cat=fd.get('pcat')?.toString().trim() || 'Digital Art';
       const bio=fd.get('pbio')?.toString().trim();
       const artTitle=fd.get('partTitle')?.toString().trim();
       let artImg=fd.get('partImg')?.toString().trim();
-      if(!name){ alert('Please enter your Display Name.'); return; }
-      if(!handle){ handle = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
-      // leave empty = black placeholder (do NOT inject demo image)
-      if(!artImg){ artImg = ''; }
-      const data={name, handle, cat, bio, artTitle, artImg, createdAt: new Date().toISOString()};
-      try{ await PortfolioStore.save(data); }catch(err){ alert('Could not save.'); return; }
-      if(artTitle){
-        const exists = artworks.some(a=> a.title===artTitle && a.artist===name);
-        if(!exists){ artworks.unshift({title: artTitle, artist: name, cat: cat, img: artImg, love: '— new'}); renderArt(activeCat, document.getElementById('searchInput')?.value || ""); }
+      // validation
+      if(!name){
+        if(pMsg){ pMsg.textContent='Please enter your display name.'; pMsg.style.color='#ff9a9a'; pMsg.classList.add('show'); }
+        document.getElementById('p-name')?.focus(); return;
       }
-      await renderPortfolioPreview();
-      if(pMsg){ pMsg.classList.add('show'); setTimeout(()=> pMsg.classList.remove('show'), 4000); }
-      pForm.reset();
-      if(pPreview) pPreview.scrollIntoView({behavior:'smooth', block:'nearest'});
+      if(artImg && !/^https?:\/\/.+/i.test(artImg)){
+        if(pMsg){ pMsg.textContent='Please enter a valid image URL starting with https://'; pMsg.style.color='#ff9a9a'; pMsg.classList.add('show'); }
+        document.getElementById('p-art-img')?.focus(); return;
+      }
+      if(!artImg){ artImg = ''; }
+      const user = Auth.getUser();
+      const handle = user ? user.handle : name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const data={name, handle, cat, bio, artTitle, artImg, createdAt: new Date().toISOString()};
+      // loading state
+      if(submitBtn){ submitBtn.disabled=true; submitBtn.textContent='Publishing…'; submitBtn.style.opacity='.7'; }
+      if(pMsg){ pMsg.textContent=''; pMsg.classList.remove('show'); }
+      try{
+        await PortfolioStore.save(data);
+        if(artTitle){
+          const exists = artworks.some(a=> a.title===artTitle && a.artist===name);
+          if(!exists){ artworks.unshift({title: artTitle, artist: name, cat: cat, img: artImg, love: '— new'}); renderArt(activeCat, document.getElementById('searchInput')?.value || ""); syncFromBackend(); }
+        }
+        await renderPortfolioPreview();
+        if(pMsg){ pMsg.textContent='Portfolio published — your profile is now live in Explore.'; pMsg.style.color='#a8f0c6'; pMsg.classList.add('show'); setTimeout(()=> pMsg.classList.remove('show'), 5000); }
+        // keep handle/display name, clear only artwork fields
+        document.getElementById('p-art-title').value=''; document.getElementById('p-art-img').value=''; document.getElementById('p-bio').value='';
+        if(pPreview) pPreview.scrollIntoView({behavior:'smooth', block:'nearest'});
+      }catch(err){
+        if(pMsg){ pMsg.textContent= err.message || 'Could not publish. Please try again.'; pMsg.style.color='#ff9a9a'; pMsg.classList.add('show'); }
+      }finally{
+        if(submitBtn){ submitBtn.disabled=false; submitBtn.textContent='Publish Portfolio →'; submitBtn.style.opacity='1'; }
+      }
     });
   }
   if(pViewBtn){
@@ -1061,6 +1103,15 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
   function updateAuthUI(){
     const logged = Auth.isLogged();
     const user = Auth.getUser();
+    // sync portfolio form with account
+    const pNameEl = document.getElementById('p-name');
+    const pHandleEl = document.getElementById('p-handle');
+    if(logged && user){
+      if(pNameEl && !pNameEl.value) pNameEl.value = user.name;
+      if(pHandleEl){ pHandleEl.value = 'artify.studio/' + user.handle; pHandleEl.readOnly = true; }
+    } else {
+      if(pHandleEl){ pHandleEl.value = ''; pHandleEl.readOnly = true; pHandleEl.placeholder = 'artify.studio/your-name — login to claim'; }
+    }
     if(authBtn){
       if(logged && user){
         authBtn.textContent = user.handle + ' ▾';
