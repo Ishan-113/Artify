@@ -114,7 +114,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── Auth helpers ──
 function generateToken(user){
-  return jwt.sign({ id: user.id, email: user.email, handle: user.handle }, JWT_SECRET, { expiresIn: '30d' });
+  return jwt.sign({ id: user.id, email: user.email, handle: user.handle, name: user.name }, JWT_SECRET, { expiresIn: '30d' });
 }
 function authMiddleware(req, res, next){
   const hdr = req.headers.authorization || '';
@@ -203,11 +203,17 @@ app.get('/api/artworks', async (req, res) => {
   res.json(rows);
 });
 
-app.post('/api/artworks', async (req, res) => {
-  const { title, artist, cat, img } = req.body || {};
-  if (!title || !artist || !cat) return res.status(400).json({ error: 'title, artist, cat required' });
+app.post('/api/artworks', authMiddleware, async (req, res) => {
+  const { title, cat, img } = req.body || {};
+  let artist = req.user.name;
+  let handle = req.user.handle;
+  if(!artist || !handle){
+    const u = (await db.execute({ sql: 'SELECT name, handle FROM users WHERE id=?', args: [req.user.id] })).rows[0];
+    if(u){ artist = artist || u.name; handle = handle || u.handle; }
+  }
+  if (!artist || !handle) return res.status(400).json({ error: 'User data missing — please login again' });
+  if (!title || !cat) return res.status(400).json({ error: 'title and cat required' });
   const love = req.body.love || '— new';
-  const handle = req.body.handle || slugify(artist);
   try {
     await db.execute({
       sql: 'INSERT INTO artworks (title, artist, cat, img, love, handle, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(title, artist) DO UPDATE SET cat=excluded.cat, img=excluded.img',
@@ -293,8 +299,13 @@ app.post('/api/portfolio', authMiddleware, async (req, res) => {
   let { name, handle, cat, category, bio, artTitle, artImg, createdAt } = req.body || {};
   cat = cat || category;
   // force ownership: handle and name come from logged-in user, ignore client handle to prevent hijacking
-  const userHandle = req.user.handle;
-  const userName = req.user.name;
+  let userHandle = req.user.handle;
+  let userName = req.user.name;
+  if(!userHandle || !userName){
+    const u = (await db.execute({ sql: 'SELECT name, handle FROM users WHERE id=?', args: [req.user.id] })).rows[0];
+    if(u){ userHandle = userHandle || u.handle; userName = userName || u.name; }
+  }
+  if(!userHandle || !userName) return res.status(400).json({ error: 'User data missing — please login again' });
   // allow custom display name but handle is locked to user's handle
   name = (name || userName).trim();
   handle = userHandle;

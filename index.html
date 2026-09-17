@@ -193,37 +193,55 @@
   </div>
 </div>
 
-<!-- Portfolio Overlay — Personal Portfolio (Create flow) -->
-<div class="overlay" id="overlay-portfolio" role="dialog" aria-modal="true" aria-label="Create your portfolio">
+<!-- Portfolio Overlay — Simplified: My Collection -->
+<div class="overlay" id="overlay-portfolio" role="dialog" aria-modal="true" aria-label="My portfolio">
   <div class="panel">
     <button class="close" aria-label="Close" data-close>✕</button>
-    <h2>Create Your Portfolio</h2>
-    <p class="sub">Create your personal portfolio — a clean, shareable profile that grows with every artwork you publish.</p>
-    <div class="contact-grid">
-      <div class="contact-info">
-        <h4>How it works</h4>
-        <p><strong>1.</strong> Tell us about yourself — name, focus and short bio.<br><strong>2.</strong> Add your first artwork with a title and image.<br><strong>3.</strong> Publish — your profile appears in Explore and is shareable via your link.</p>
-        <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)">
-          <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.86);font-weight:700">Your Portfolio Preview</div>
-          <div id="portfolioPreview" style="margin-top:12px;color:rgba(255,255,255,.62);font-size:13px;line-height:1.6">No portfolio yet — create one on the right. It will stay on this device until cleared.</div>
+    <h2>My Collection</h2>
+    <p class="sub">Upload your artwork and manage your personal portfolio.</p>
+
+    <!-- Not logged: gate -->
+    <div id="portfolioAuthGate" style="display:none;text-align:center;padding:36px 20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:16px;margin-top:18px">
+      <p style="color:rgba(255,255,255,.72);font-size:14px;line-height:1.6">Please login to view your collection.<br>Your artworks are tied to your account.</p>
+      <button data-open="auth" style="margin-top:14px;height:40px;padding:0 18px;border-radius:999px;background:#fff;color:#111;border:1px solid #fff;font-weight:700;cursor:pointer">Login or create account →</button>
+    </div>
+
+    <!-- Logged: dashboard -->
+    <div id="portfolioDashboard" style="display:none;margin-top:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px">
+        <div>
+          <div id="myPortfolioName" style="font-weight:700;color:#fff;font-size:16px">—</div>
+          <div id="myPortfolioHandle" style="font-size:13px;color:rgba(255,255,255,.62);margin-top:2px">—</div>
+          <div id="myPortfolioBio" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:6px;max-width:40ch"></div>
         </div>
-        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-          <button id="portfolioViewBtn" style="display:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid #fff;background:#fff;color:#111;font-weight:600;font-size:13px;cursor:pointer">View My Portfolio</button>
-          <button id="portfolioClearBtn" style="display:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;font-weight:500;font-size:13px;cursor:pointer">Clear</button>
-        </div>
-        <p style="margin-top:12px;font-size:11px;color:rgba(255,255,255,.55);line-height:1.6">Your portfolio will appear in Explore once published. Add a high-resolution image URL for best presentation.</p>
+        <button id="addArtBtn" style="height:40px;padding:0 18px;border-radius:999px;background:#fff;color:#111;border:1px solid #fff;font-weight:700;cursor:pointer;white-space:nowrap">+ Add Artwork</button>
       </div>
-      <form class="form" id="portfolioForm" novalidate>
-        <div class="field"><label for="p-name">Display Name <span style="color:#ff9a9a">*</span></label><input id="p-name" name="pname" required aria-required="true" placeholder="e.g. Elena Voss" autocomplete="name"></div>
-        <div class="field"><label for="p-handle">Portfolio link</label><input id="p-handle" name="phandle" placeholder="artify.studio/your-name" aria-describedby="handleHelp" readonly style="opacity:.85"><span id="handleHelp" style="font-size:11px;color:rgba(255,255,255,.5)">Your shareable link — based on your account. You can update your display name anytime.</span></div>
-        <div class="field"><label for="p-category">Focus <span style="color:#ff9a9a">*</span></label><select id="p-category" name="pcat" required aria-required="true" style="width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;padding:0 14px;font-family:var(--font-body);font-size:14px;outline:none"><option value="Digital Art" style="color:#111">Digital Art</option><option value="Illustration" style="color:#111">Illustration</option><option value="Photography" style="color:#111">Photography</option><option value="3D Art" style="color:#111">3D Art</option><option value="Concept Art" style="color:#111">Concept Art</option></select></div>
-        <div class="field"><label for="p-bio">Short bio</label><textarea id="p-bio" name="pbio" placeholder="A short statement about your practice, tools and interests..." rows="3"></textarea></div>
-        <div class="field"><label for="p-art-title">First artwork — title</label><input id="p-art-title" name="partTitle" placeholder="e.g. Neon Horizon"></div>
-        <div class="field"><label for="p-art-img">Artwork image URL</label><input id="p-art-img" name="partImg" type="url" placeholder="https://..." aria-describedby="artHelp"><span id="artHelp" style="font-size:11px;color:rgba(255,255,255,.5)">Direct link to your image (https://). Leave empty to publish text-only.</span></div>
-        <button type="submit" class="submit" id="portfolioSubmit">Publish Portfolio →</button>
-        <p class="form-msg" id="portfolioMsg" role="status" aria-live="polite"></p>
-        <p style="font-size:11px;color:rgba(255,255,255,.42);text-align:center">You can edit this anytime after publishing.</p>
+
+      <div id="myArtGrid" class="grid-art" style="margin-top:18px"></div>
+      <div id="myArtEmpty" style="display:none;text-align:center;padding:48px 24px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.14);border-radius:16px;margin-top:18px">
+        <p style="color:rgba(255,255,255,.72);font-size:14px">No artworks yet</p>
+        <p style="color:rgba(255,255,255,.52);font-size:12px;margin-top:6px">Upload your first piece to build your collection.</p>
+        <button id="myArtEmptyBtn" style="margin-top:14px;height:40px;padding:0 18px;border-radius:999px;background:#fff;color:#111;border:1px solid #fff;font-weight:700;cursor:pointer">Add your first artwork →</button>
+      </div>
+
+      <form id="addArtForm" class="form" novalidate style="display:none;margin-top:18px;padding:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:14px">
+        <h4 style="color:#fff;font-size:14px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:12px">Upload Artwork</h4>
+        <div class="field"><label for="artTitleInput">Title <span style="color:#ff9a9a">*</span></label><input id="artTitleInput" required placeholder="e.g. Neon Horizon"></div>
+        <div class="field"><label for="artCatInput">Category</label><select id="artCatInput" style="width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;padding:0 14px;font-family:var(--font-body);font-size:14px"><option value="Digital Art" style="color:#111">Digital Art</option><option value="Illustration" style="color:#111">Illustration</option><option value="Photography" style="color:#111">Photography</option><option value="3D Art" style="color:#111">3D Art</option><option value="Concept Art" style="color:#111">Concept Art</option></select></div>
+        <div class="field"><label for="artImgInput">Image URL <span style="color:#ff9a9a">*</span></label><input id="artImgInput" type="url" required placeholder="https://..."><span style="font-size:11px;color:rgba(255,255,255,.5)">Direct https:// link to your image.</span></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button type="submit" class="submit" id="addArtSubmit" style="flex:1">Upload →</button>
+          <button type="button" id="addArtCancel" style="height:44px;padding:0 18px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;cursor:pointer">Cancel</button>
+        </div>
+        <p class="form-msg" id="addArtMsg" role="status" aria-live="polite"></p>
       </form>
+
+      <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end">
+        <button id="portfolioClearBtn" style="display:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;font-size:13px;cursor:pointer">Clear Portfolio</button>
+      </div>
+      <!-- keep legacy preview for compatibility (hidden) -->
+      <div id="portfolioPreview" style="display:none"></div>
+      <button id="portfolioViewBtn" style="display:none"></button>
     </div>
   </div>
 </div>

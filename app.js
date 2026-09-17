@@ -481,6 +481,119 @@
     });
   }
 
+  // ── New: My Collection dashboard ──
+  const portfolioAuthGate = document.getElementById('portfolioAuthGate');
+  const portfolioDashboard = document.getElementById('portfolioDashboard');
+  const myPortfolioName = document.getElementById('myPortfolioName');
+  const myPortfolioHandle = document.getElementById('myPortfolioHandle');
+  const myPortfolioBio = document.getElementById('myPortfolioBio');
+  const myArtGrid = document.getElementById('myArtGrid');
+  const myArtEmpty = document.getElementById('myArtEmpty');
+  const myArtEmptyBtn = document.getElementById('myArtEmptyBtn');
+  const addArtBtn = document.getElementById('addArtBtn');
+  const addArtForm = document.getElementById('addArtForm');
+  const addArtCancel = document.getElementById('addArtCancel');
+  const addArtMsg = document.getElementById('addArtMsg');
+  async function renderPortfolioDashboard(){
+    const logged = Auth.isLogged();
+    if(!logged){
+      if(portfolioAuthGate) portfolioAuthGate.style.display='block';
+      if(portfolioDashboard) portfolioDashboard.style.display='none';
+      return;
+    }
+    if(portfolioAuthGate) portfolioAuthGate.style.display='none';
+    if(portfolioDashboard) portfolioDashboard.style.display='block';
+    const user = Auth.getUser();
+    if(myPortfolioName) myPortfolioName.textContent = user ? user.name : '—';
+    if(myPortfolioHandle) myPortfolioHandle.textContent = user ? 'artify.studio/' + user.handle : '';
+    try{
+      const res = await fetch('/api/portfolio/me', { headers:{...Auth.authHeader()} });
+      if(res.ok){
+        const data = await res.json();
+        if(myPortfolioBio) myPortfolioBio.textContent = data.bio || 'No bio yet — your collection will appear in Explore.';
+      } else {
+        if(myPortfolioBio) myPortfolioBio.textContent = 'No bio yet — add your first artwork to build your collection.';
+      }
+    }catch(e){ if(myPortfolioBio) myPortfolioBio.textContent=''; }
+    await renderMyArtworks();
+  }
+  async function renderMyArtworks(){
+    if(!myArtGrid) return;
+    myArtGrid.innerHTML = '<p style="color:rgba(255,255,255,.55);grid-column:1/-1;font-size:13px">Loading your artworks…</p>';
+    if(myArtEmpty) myArtEmpty.style.display='none';
+    try{
+      const user = Auth.getUser();
+      if(!user){ myArtGrid.innerHTML=''; if(myArtEmpty) myArtEmpty.style.display='block'; return; }
+      const res = await fetch('/api/artworks');
+      const all = res.ok ? await res.json() : [];
+      const mine = all.filter(a => (a.artist||'').toLowerCase()=== (user.name||'').toLowerCase() || (a.handle||'').toLowerCase()=== (user.handle||'').toLowerCase());
+      if(!mine.length){
+        myArtGrid.innerHTML='';
+        if(myArtEmpty) myArtEmpty.style.display='block';
+        return;
+      }
+      if(myArtEmpty) myArtEmpty.style.display='none';
+      myArtGrid.innerHTML = mine.map(a=>{
+        const hasImg = (a.img||'').trim();
+        const visual = hasImg ? `<img src="${a.img}" alt="${a.title} by ${a.artist}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div style=&quot;width:100%;aspect-ratio:4/3;display:grid;place-items:center;background:#0a0f14;color:rgba(255,255,255,.38);font-size:11px&quot;>Image unavailable</div>')">` : `<div style="width:100%;aspect-ratio:4/3;display:grid;place-items:center;background:#0a0f14;color:rgba(255,255,255,.35);font-size:11px">No image</div>`;
+        return `<div class="art">${visual}<div class="art-body"><div class="art-title">${a.title}</div><div class="art-by">by ${a.artist} • ${a.love||'— new'}</div><span class="art-cat">${a.cat}</span></div></div>`;
+      }).join('');
+    }catch(e){
+      myArtGrid.innerHTML='<p style="color:rgba(255,255,255,.6);grid-column:1/-1">We couldn\'t load your collection. Please try again.</p>';
+    }
+  }
+  // override old preview to also update dashboard
+  const _oldRenderPreview = renderPortfolioPreview;
+  renderPortfolioPreview = async function(){ await _oldRenderPreview(); await renderPortfolioDashboard(); };
+  // also update dashboard when portfolio overlay opens
+  if(overlays.portfolio){
+    const obs2 = new MutationObserver(()=>{ if(overlays.portfolio.classList.contains('open')) renderPortfolioDashboard(); });
+    obs2.observe(overlays.portfolio, { attributes:true, attributeFilter:['class'] });
+  }
+  function showAddArt(show){
+    if(!addArtForm) return;
+    addArtForm.style.display = show ? 'grid' : 'none';
+    if(show) document.getElementById('artTitleInput')?.focus();
+    if(addArtMsg){ addArtMsg.textContent=''; addArtMsg.classList.remove('show'); }
+  }
+  if(addArtBtn) addArtBtn.addEventListener('click', ()=> showAddArt(true));
+  if(myArtEmptyBtn) myArtEmptyBtn.addEventListener('click', ()=> showAddArt(true));
+  if(addArtCancel) addArtCancel.addEventListener('click', ()=> showAddArt(false));
+  if(addArtForm){
+    addArtForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const titleEl = document.getElementById('artTitleInput');
+      const imgEl = document.getElementById('artImgInput');
+      const catEl = document.getElementById('artCatInput');
+      const title = titleEl?.value.trim();
+      const img = imgEl?.value.trim();
+      const cat = catEl?.value || 'Digital Art';
+      if(!title){ if(addArtMsg){ addArtMsg.textContent='Please enter a title.'; addArtMsg.style.color='#ff9a9a'; addArtMsg.classList.add('show'); } titleEl?.focus(); return; }
+      if(!img){ if(addArtMsg){ addArtMsg.textContent='Please enter an image URL.'; addArtMsg.style.color='#ff9a9a'; addArtMsg.classList.add('show'); } imgEl?.focus(); return; }
+      if(img && !/^https?:\/\/.+/i.test(img)){ if(addArtMsg){ addArtMsg.textContent='Please enter a valid https:// image URL.'; addArtMsg.style.color='#ff9a9a'; addArtMsg.classList.add('show'); } return; }
+      const submitBtn = document.getElementById('addArtSubmit');
+      if(submitBtn){ submitBtn.disabled=true; submitBtn.textContent='Uploading…'; submitBtn.style.opacity='.7'; }
+      try{
+        const meRes = await fetch('/api/portfolio/me', { headers:{...Auth.authHeader()} });
+        if(meRes.status===404){
+          const user = Auth.getUser();
+          await fetch('/api/portfolio', { method:'POST', headers:{'Content-Type':'application/json', ...Auth.authHeader()}, body: JSON.stringify({ name: user.name, cat, bio:'', artTitle:'', artImg:'' }) });
+        }
+        const res = await fetch('/api/artworks', { method:'POST', headers:{'Content-Type':'application/json', ...Auth.authHeader()}, body: JSON.stringify({ title, cat, img, artist: Auth.getUser().name, handle: Auth.getUser().handle }) });
+        if(!res.ok){ const j=await res.json().catch(()=>({})); throw new Error(j.error||'Upload failed'); }
+        if(addArtMsg){ addArtMsg.textContent='Artwork uploaded — now visible in Explore and your collection.'; addArtMsg.style.color='#a8f0c6'; addArtMsg.classList.add('show'); }
+        addArtForm.reset();
+        await renderMyArtworks();
+        await syncFromBackend();
+        setTimeout(()=> showAddArt(false), 1200);
+      }catch(err){
+        if(addArtMsg){ addArtMsg.textContent= err.message || 'Could not upload. Please try again.'; addArtMsg.style.color='#ff9a9a'; addArtMsg.classList.add('show'); }
+      }finally{
+        if(submitBtn){ submitBtn.disabled=false; submitBtn.textContent='Upload →'; submitBtn.style.opacity='1'; }
+      }
+    });
+  }
+
   // ── Auth: credentials to open personal portfolio ──
   const authBtn = document.getElementById('authBtn');
   const tabLogin = document.getElementById('tabLogin');
