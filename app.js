@@ -125,35 +125,33 @@
   renderArtists();
 
   // ── Backend sync: when USE_BACKEND=true, pull real data from SQLite so other users' portfolios are visible ──
-  async function syncFromBackend(){
+async function syncFromBackend(){
     if(!PORTFOLIO_CONFIG.USE_BACKEND) return;
     if(location.protocol === 'file:') { console.warn('[Artify] file:// cannot fetch /api — open via http://localhost:4000'); return; }
     try{
       const artRes = await fetch('/api/artworks').then(r=> r.ok ? r.json() : null).catch(()=>null);
-      if(Array.isArray(artRes)){
-        if(artRes.length){
-          artworks.length = 0;
-          artRes.forEach(a=>{
-            artworks.push({ title: a.title, artist: a.artist, cat: a.cat, img: (a.img||'').trim(), love: a.love || '— new' });
-          });
-          renderArt(activeCat, document.getElementById('searchInput')?.value || '');
-        } else {
-          document.getElementById('artGrid').innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">No artworks to display yet.</p>';
-        }
+      const artworksData = Array.isArray(artRes) ? artRes : (artRes?.value || []);
+      if(artworksData.length){
+        artworks.length = 0;
+        artworksData.forEach(a=>{
+          artworks.push({ title: a.title, artist: a.artist, cat: a.cat, img: (a.img||'').trim(), love: a.love || '— new' });
+        });
+        renderArt(activeCat, document.getElementById('searchInput')?.value || '');
+      } else {
+        document.getElementById('artGrid').innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">No artworks to display yet.</p>';
       }
       const artistRes = await fetch('/api/artists').then(r=> r.ok ? r.json() : null).catch(()=>null);
-      if(Array.isArray(artistRes)){
-        if(artistRes.length){
-          const existing = new Set(artists.map(a=>a.name.toLowerCase()));
-          artistRes.forEach(a=>{
-            if(!existing.has((a.name||'').toLowerCase())){
-              artists.push({ name: a.name, role: a.role || (a.cat ? a.cat+' • '+(a.handle||'') : 'Community'), bio: a.bio || '', img: (a.img||'').trim() });
-            }
-          });
-          renderArtists();
-        } else {
-          document.getElementById('artistGrid').innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">No artists to display yet.</p>';
-        }
+      const artistsData = Array.isArray(artistRes) ? artistRes : (artistRes?.value || []);
+      if(artistsData.length){
+        const existing = new Set(artists.map(a=>a.name.toLowerCase()));
+        artistsData.forEach(a=>{
+          if(!existing.has((a.name||'').toLowerCase())){
+            artists.push({ name: a.name, role: a.role || (a.cat ? a.cat+' • '+(a.handle||'') : 'Community'), bio: a.bio || '', img: (a.img||'').trim() });
+          }
+        });
+        renderArtists();
+      } else {
+        document.getElementById('artistGrid').innerHTML = '<p style="color:rgba(255,255,255,.6);grid-column:1/-1">No artists to display yet.</p>';
       }
     }catch(e){
       console.warn('[syncFromBackend] failed', e);
