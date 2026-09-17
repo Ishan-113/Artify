@@ -344,6 +344,7 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
       <div class="header-cta">
         <a href="#" class="btn-glass" data-open="artists">Join as an Artist</a>
         <a href="#" class="btn-white" data-open="portfolio">Create Portfolio</a>
+        <a href="#" class="btn-glass" id="authBtn" data-open="auth" style="padding:9px 14px">Login</a>
         <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
@@ -514,6 +515,36 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
         <p class="form-msg" id="portfolioMsg">Portfolio created! Preview updated above. ✨</p>
         <p style="font-size:11px;color:rgba(255,255,255,.42);text-align:center">Demo mode — no data leaves this browser. In production this POSTs to /api/portfolio.</p>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Auth Overlay — credentials to open personal portfolio -->
+<div class="overlay" id="overlay-auth" role="dialog" aria-modal="true" aria-label="Login or Signup">
+  <div class="panel" style="max-width:560px">
+    <button class="close" aria-label="Close" data-close>✕</button>
+    <h2 id="authTitle">Welcome to Artify</h2>
+    <p class="sub">Create an account with <strong style="color:#fff">email + password</strong> to own your portfolio. Login to open your personal <code style="background:rgba(255,255,255,.10);padding:2px 6px;border-radius:4px">artify.studio/your-handle</code>.</p>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button id="tabLogin" style="flex:1;height:40px;border-radius:999px;border:1px solid #fff;background:#fff;color:#111;font-weight:700;cursor:pointer">Login</button>
+      <button id="tabSignup" style="flex:1;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-weight:600;cursor:pointer">Signup</button>
+    </div>
+    <form class="form" id="authForm" novalidate style="margin-top:18px">
+      <div class="field" id="fieldName" style="display:none"><label for="a-name">Display Name *</label><input id="a-name" name="aname" placeholder="e.g. Ishan"></div>
+      <div class="field"><label for="a-email">Email *</label><input id="a-email" name="aemail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+      <div class="field"><label for="a-password">Password *</label><input id="a-password" name="apassword" type="password" autocomplete="current-password" required placeholder="•••••••• (min 6)"><span style="font-size:11px;color:rgba(255,255,255,.45)">Your credentials — needed to re-open your portfolio on any device.</span></div>
+      <div class="field" id="fieldHandle" style="display:none"><label for="a-handle">Handle (optional)</label><input id="a-handle" name="ahandle" placeholder="artify.studio/your-handle (auto from name)"></div>
+      <button type="submit" class="submit" id="authSubmit">Login →</button>
+      <p class="form-msg" id="authMsg" style="color:#ffd27a"></p>
+      <p class="form-msg" id="authOk" style="color:#a8f0c6"></p>
+    </form>
+    <div id="authLogged" style="display:none;margin-top:18px;padding:14px;border-radius:12px;background:rgba(57,255,120,.08);border:1px solid rgba(57,255,120,.18)">
+      <div style="font-weight:700;color:#a8f0c6">Logged in as <span id="authUser"></span></div>
+      <div style="font-size:13px;color:rgba(255,255,255,.72);margin-top:4px">Handle: <code id="authHandle"></code> • <span id="authHasPortfolio"></span></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="openMyPortfolioBtn" style="height:36px;padding:0 14px;border-radius:999px;background:#fff;color:#111;border:1px solid #fff;font-weight:700;cursor:pointer">Open My Portfolio →</button>
+        <button id="logoutBtn" style="height:36px;padding:0 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;cursor:pointer">Logout</button>
+      </div>
     </div>
   </div>
 </div>
@@ -724,6 +755,7 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     about: document.getElementById('overlay-about'),
     contact: document.getElementById('overlay-contact'),
     portfolio: document.getElementById('overlay-portfolio'),
+    auth: document.getElementById('overlay-auth'),
   };
   function open(name){
     if(name==='home'){ closeAll(); window.scrollTo({top:0, behavior:'smooth'}); return; }
@@ -795,6 +827,16 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     API_BASE: '/api/portfolio',
     STORAGE_KEY: 'artify_my_portfolio_v1'
   };
+  const Auth = {
+    tokenKey: 'artify_token',
+    userKey: 'artify_user',
+    getToken(){ return localStorage.getItem(this.tokenKey); },
+    getUser(){ try{ return JSON.parse(localStorage.getItem(this.userKey)||'null'); }catch(e){ return null; } },
+    isLogged(){ return !!this.getToken(); },
+    logout(){ localStorage.removeItem(this.tokenKey); localStorage.removeItem(this.userKey); },
+    setSession(token, user){ localStorage.setItem(this.tokenKey, token); localStorage.setItem(this.userKey, JSON.stringify(user)); },
+    authHeader(){ const t=this.getToken(); return t ? { 'Authorization':'Bearer '+t } : {}; }
+  };
   const PortfolioStore = {
     _myHandle(){
       try{
@@ -808,21 +850,26 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
       // always cache locally for instant preview
       try{ localStorage.setItem(PORTFOLIO_CONFIG.STORAGE_KEY, JSON.stringify(data)); }catch(e){}
       if(PORTFOLIO_CONFIG.USE_BACKEND){
+        if(!Auth.isLogged()){
+          alert('Please login/signup first to create a credentials-protected portfolio. Your data was cached locally only.');
+          return data;
+        }
         try{
           const res = await fetch(PORTFOLIO_CONFIG.API_BASE, {
             method: 'POST',
-            headers: {'Content-Type':'application/json'},
+            headers: {'Content-Type':'application/json', ...Auth.authHeader()},
             body: JSON.stringify(data)
           });
-          if(!res.ok) throw new Error('API save failed '+res.status);
+          if(!res.ok){
+            const j = await res.json().catch(()=>({}));
+            throw new Error(j.error || 'API save failed '+res.status);
+          }
           const saved = await res.json().catch(()=> data);
-          // re-cache canonical from server
           try{ localStorage.setItem(PORTFOLIO_CONFIG.STORAGE_KEY, JSON.stringify(saved)); }catch(e){}
           return saved;
         }catch(err){
-          console.warn('[PortfolioStore] backend save failed, using localStorage cache', err);
-          // keep local copy, don't alert hard when hosted via file://
-          if(location.protocol.startsWith('http')) alert('Backend not reachable — saved locally only (others will NOT see it). Is server running on port 4000?');
+          console.warn('[PortfolioStore] backend save failed', err);
+          alert(err.message || 'Save failed');
           return data;
         }
       } else {
@@ -831,11 +878,22 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
     },
     async load(){
       if(PORTFOLIO_CONFIG.USE_BACKEND){
-        const myHandle = this._myHandle();
-        if(!myHandle){
-          // no local handle yet — nothing to load from server
-          return null;
+        // if logged in, fetch own via token (credentials)
+        if(Auth.isLogged()){
+          try{
+            const res = await fetch(PORTFOLIO_CONFIG.API_BASE + '/me', {method:'GET', headers: {...Auth.authHeader()}});
+            if(res.status===404) return null;
+            if(!res.ok) throw new Error('API load '+res.status);
+            const data = await res.json();
+            try{ localStorage.setItem(PORTFOLIO_CONFIG.STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+            return data;
+          }catch(err){
+            console.warn('[PortfolioStore] auth load failed', err);
+            // fall back to handle query if token expired
+          }
         }
+        const myHandle = this._myHandle();
+        if(!myHandle) return null;
         try{
           const res = await fetch(PORTFOLIO_CONFIG.API_BASE + '/me?handle=' + encodeURIComponent(myHandle), {method:'GET'});
           if(res.status===404) return null;
@@ -854,13 +912,14 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
       }
     },
     async clear(){
-      const myHandle = this._myHandle();
-      if(PORTFOLIO_CONFIG.USE_BACKEND && myHandle){
-        try{ await fetch(PORTFOLIO_CONFIG.API_BASE + '/me?handle=' + encodeURIComponent(myHandle), {method:'DELETE'}); }catch(e){ console.warn(e); }
-        // also try handle-less delete for compatibility
-        try{ await fetch(PORTFOLIO_CONFIG.API_BASE + '/' + encodeURIComponent(myHandle), {method:'DELETE'}); }catch(e){}
+      if(PORTFOLIO_CONFIG.USE_BACKEND && Auth.isLogged()){
+        try{ await fetch(PORTFOLIO_CONFIG.API_BASE + '/me', {method:'DELETE', headers:{...Auth.authHeader()}}); }catch(e){ console.warn(e); }
       } else if(PORTFOLIO_CONFIG.USE_BACKEND){
-        try{ await fetch(PORTFOLIO_CONFIG.API_BASE + '/me', {method:'DELETE'}); }catch(e){}
+        const myHandle = this._myHandle();
+        if(myHandle){
+          try{ await fetch(PORTFOLIO_CONFIG.API_BASE + '/me?handle=' + encodeURIComponent(myHandle), {method:'DELETE'}); }catch(e){ console.warn(e); }
+          try{ await fetch(PORTFOLIO_CONFIG.API_BASE + '/' + encodeURIComponent(myHandle), {method:'DELETE'}); }catch(e){}
+        }
       }
       localStorage.removeItem(PORTFOLIO_CONFIG.STORAGE_KEY);
     }
@@ -961,7 +1020,159 @@ html.js-enter .rule{transform:scaleX(0);transform-origin:left center}
       if(!confirm('Clear your portfolio?'+(PORTFOLIO_CONFIG.USE_BACKEND?' This will also DELETE on server.':''))) return;
       await PortfolioStore.clear();
       await renderPortfolioPreview();
+      syncFromBackend();
     });
+  }
+
+  // ── Auth: credentials to open personal portfolio ──
+  const authBtn = document.getElementById('authBtn');
+  const tabLogin = document.getElementById('tabLogin');
+  const tabSignup = document.getElementById('tabSignup');
+  const authForm = document.getElementById('authForm');
+  const authMsg = document.getElementById('authMsg');
+  const authOk = document.getElementById('authOk');
+  const authLogged = document.getElementById('authLogged');
+  const authUserEl = document.getElementById('authUser');
+  const authHandleEl = document.getElementById('authHandle');
+  const authHasPortfolioEl = document.getElementById('authHasPortfolio');
+  const openMyPortfolioBtn = document.getElementById('openMyPortfolioBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  let authMode = 'login';
+  function setAuthMode(mode){
+    authMode = mode;
+    const isLogin = mode==='login';
+    tabLogin.style.background = isLogin ? '#fff' : 'rgba(255,255,255,.08)';
+    tabLogin.style.color = isLogin ? '#111' : '#fff';
+    tabLogin.style.borderColor = isLogin ? '#fff' : 'rgba(255,255,255,.18)';
+    tabSignup.style.background = isLogin ? 'rgba(255,255,255,.08)' : '#fff';
+    tabSignup.style.color = isLogin ? '#fff' : '#111';
+    tabSignup.style.borderColor = isLogin ? 'rgba(255,255,255,.18)' : '#fff';
+    document.getElementById('fieldName').style.display = isLogin ? 'none' : 'grid';
+    document.getElementById('fieldHandle').style.display = isLogin ? 'none' : 'grid';
+    document.getElementById('authTitle').textContent = isLogin ? 'Login to Artify' : 'Join Artify';
+    document.getElementById('authSubmit').textContent = isLogin ? 'Login →' : 'Create account →';
+    authMsg.textContent=''; authMsg.classList.remove('show');
+    authOk.textContent=''; authOk.classList.remove('show');
+  }
+  if(tabLogin) tabLogin.addEventListener('click', ()=> setAuthMode('login'));
+  if(tabSignup) tabSignup.addEventListener('click', ()=> setAuthMode('signup'));
+  setAuthMode('login');
+
+  function updateAuthUI(){
+    const logged = Auth.isLogged();
+    const user = Auth.getUser();
+    if(authBtn){
+      if(logged && user){
+        authBtn.textContent = user.handle + ' ▾';
+        authBtn.dataset.open = 'auth';
+        authBtn.style.background = 'rgba(57,255,120,.14)';
+        authBtn.style.borderColor = 'rgba(57,255,120,.28)';
+        authBtn.style.color = '#a8f0c6';
+      }else{
+        authBtn.textContent = 'Login';
+        authBtn.dataset.open = 'auth';
+        authBtn.style.background = '';
+        authBtn.style.borderColor = '';
+        authBtn.style.color = '';
+      }
+    }
+    if(authLogged){
+      if(logged && user){
+        authLogged.style.display='block';
+        authForm.style.display='none';
+        tabLogin.style.display='none';
+        tabSignup.style.display='none';
+        authUserEl.textContent = user.name + ' (' + user.email + ')';
+        authHandleEl.textContent = 'artify.studio/' + user.handle;
+        // check portfolio
+        fetch('/api/portfolio/me', { headers:{...Auth.authHeader()} }).then(r=> r.ok ? r.json() : null).then(data=>{
+          authHasPortfolioEl.textContent = data ? 'Portfolio exists — ' + (data.artTitle||'no artwork yet') : 'No portfolio yet — create one';
+        }).catch(()=>{ authHasPortfolioEl.textContent=''; });
+      }else{
+        authLogged.style.display='none';
+        authForm.style.display='grid';
+        tabLogin.style.display='block';
+        tabSignup.style.display='block';
+      }
+    }
+  }
+  updateAuthUI();
+
+  // intercept Create Portfolio to require login
+  function requireAuthForPortfolio(e){
+    if(!Auth.isLogged()){
+      if(e) e.preventDefault();
+      open('auth');
+      authMsg.textContent = 'Please login or signup to create/open your personal portfolio (credentials required).';
+      authMsg.classList.add('show');
+      setAuthMode('signup');
+      return false;
+    }
+    return true;
+  }
+  // attach to all portfolio triggers
+  document.querySelectorAll('[data-open="portfolio"]').forEach(el=>{
+    // keep original open but check auth first
+    el.addEventListener('click', (e)=>{
+      if(!Auth.isLogged()){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        requireAuthForPortfolio(e);
+      }
+    }, true);
+  });
+
+  if(authForm){
+    authForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      authMsg.textContent=''; authOk.textContent='';
+      const fd = new FormData(authForm);
+      const email = (fd.get('aemail')||'').toString().trim().toLowerCase();
+      const password = (fd.get('apassword')||'').toString();
+      const name = (fd.get('aname')||'').toString().trim();
+      const handle = (fd.get('ahandle')||'').toString().trim();
+      if(!email || !password){ authMsg.textContent='Email and password required'; authMsg.classList.add('show'); return; }
+      if(authMode==='signup' && !name){ authMsg.textContent='Display name required for signup'; authMsg.classList.add('show'); return; }
+      const url = authMode==='signup' ? '/api/auth/signup' : '/api/auth/login';
+      const body = authMode==='signup' ? { name, email, password, handle } : { email, password };
+      try{
+        const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        const j = await res.json().catch(()=>({}));
+        if(!res.ok){ throw new Error(j.error || 'Failed'); }
+        Auth.setSession(j.token, j.user);
+        authOk.textContent = authMode==='signup' ? 'Account created! Opening your portfolio…' : 'Logged in! Opening your portfolio…';
+        authOk.classList.add('show');
+        updateAuthUI();
+        await renderPortfolioPreview();
+        setTimeout(()=>{ closeAll(); open('portfolio'); }, 700);
+      }catch(err){
+        authMsg.textContent = err.message;
+        authMsg.classList.add('show');
+      }
+    });
+  }
+  if(logoutBtn){
+    logoutBtn.addEventListener('click', ()=>{
+      Auth.logout();
+      localStorage.removeItem(PORTFOLIO_CONFIG.STORAGE_KEY);
+      updateAuthUI();
+      renderPortfolioPreview();
+      authMsg.textContent='Logged out';
+      authMsg.classList.add('show');
+      setAuthMode('login');
+    });
+  }
+  if(openMyPortfolioBtn){
+    openMyPortfolioBtn.addEventListener('click', ()=>{
+      closeAll();
+      open('portfolio');
+      renderPortfolioPreview();
+    });
+  }
+  // keep auth UI in sync when overlay opens
+  if(overlays.auth){
+    const obs = new MutationObserver(()=>{ if(overlays.auth.classList.contains('open')) updateAuthUI(); });
+    obs.observe(overlays.auth, { attributes:true, attributeFilter:['class'] });
   }
 
   // Video fallback
